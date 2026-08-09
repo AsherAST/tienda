@@ -44,6 +44,11 @@ export async function setCart(cart: CartItem[]) {
   });
 }
 
+export async function clearCart() {
+  const store = await cookies();
+  store.set(cartCookieName, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
+}
+
 export async function buildCartSummary(cart: CartItem[]): Promise<CartSummary> {
   if (cart.length === 0) return { items: [], subtotal: 0, count: 0 };
 

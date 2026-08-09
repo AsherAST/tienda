@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/products";
-import { formatPrice } from "@/components/catalog/ProductCard";
+import { formatPrice } from "@/lib/format";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import type { Metadata } from "next";
 

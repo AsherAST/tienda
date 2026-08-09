@@ -1,14 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/generated/prisma/client";
-
-export function formatPrice(price: number) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
+import { formatPrice } from "@/lib/format";
 
 export function ProductCard({ product }: { product: Product }) {
   return (

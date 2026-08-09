@@ -20,6 +20,9 @@ export async function Navbar() {
               <Link href="/cuenta" className="hover:underline">
                 {session.user.name}
               </Link>
+              <Link href="/pedidos" className="hover:underline">
+                Mis pedidos
+              </Link>
               {isAdmin && (
                 <Link href="/admin" className="hover:underline">
                   Admin
