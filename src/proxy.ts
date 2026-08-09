@@ -5,7 +5,7 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-const protectedPrefixes = ["/cuenta", "/checkout", "/pedidos"];
+const protectedPrefixes = ["/cuenta", "/checkout", "/pedidos", "/admin"];
 
 export default auth((req: NextAuthRequest) => {
   const { pathname } = req.nextUrl;
