@@ -17,7 +17,7 @@ export default async function AdminPage() {
         >
           <h2 className="font-semibold">Productos</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Crear, editar y eliminar productos (próximamente).
+            Crear, editar y eliminar productos de la tienda.
           </p>
         </Link>
         <Link
