@@ -1,13 +1,9 @@
-import NextAuth from "next-auth";
-import type { NextAuthRequest } from "next-auth";
 import { NextResponse } from "next/server";
-import { authConfig } from "@/auth.config";
-
-const { auth } = NextAuth(authConfig);
+import { auth } from "@/auth";
 
 const protectedPrefixes = ["/cuenta", "/checkout", "/pedidos", "/admin"];
 
-export default auth((req: NextAuthRequest) => {
+export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth?.user;
   const role = req.auth?.user?.role;
