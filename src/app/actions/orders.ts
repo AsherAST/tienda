@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { OrderStatus } from "@/generated/prisma/enums";
 import {
   getCartFromCookie,
   buildCartSummary,
@@ -9,6 +10,32 @@ import {
 } from "@/lib/cart";
 
 export type PlaceOrderResult = { orderId?: string; error?: string };
+
+export type UpdateOrderStatusResult = { ok?: boolean; error?: string };
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: string,
+): Promise<UpdateOrderStatusResult> {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "No autorizado." };
+  }
+
+  const allowed = Object.values(OrderStatus);
+  if (!allowed.includes(status as OrderStatus)) {
+    return { error: "Estado no válido." };
+  }
+
+  const order = await db.order.findUnique({ where: { id: orderId } });
+  if (!order) return { error: "Pedido no encontrado." };
+
+  await db.order.update({
+    where: { id: orderId },
+    data: { status: status as OrderStatus },
+  });
+  return { ok: true };
+}
 
 export async function placeOrder(): Promise<PlaceOrderResult> {
   const session = await auth();

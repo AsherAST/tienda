@@ -10,6 +10,8 @@ const { mockDb, cookieStore, mockAuth } = vi.hoisted(() => {
       },
       order: {
         create: vi.fn(),
+        findUnique: vi.fn(),
+        update: vi.fn(),
       },
       $transaction: vi.fn(),
     },
@@ -29,7 +31,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { placeOrder } from "@/app/actions/orders";
+import { placeOrder, updateOrderStatus } from "@/app/actions/orders";
 import { cartCookieName, serializeCart } from "@/lib/cart";
 
 const product = {
@@ -115,5 +117,39 @@ describe("placeOrder", () => {
     expect(cookieStore.get(cartCookieName)?.value).toBe(
       serializeCart([{ id: "p1", qty: 2 }]),
     );
+  });
+});
+
+describe("updateOrderStatus", () => {
+  it("rechaza a un usuario que no es admin", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "CUSTOMER" } });
+    const result = await updateOrderStatus("o1", "SHIPPED");
+    expect(result.error).toBe("No autorizado.");
+    expect(mockDb.order.update).not.toHaveBeenCalled();
+  });
+
+  it("rechaza un estado inválido", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
+    const result = await updateOrderStatus("o1", "RARO");
+    expect(result.error).toBe("Estado no válido.");
+    expect(mockDb.order.update).not.toHaveBeenCalled();
+  });
+
+  it("devuelve error si el pedido no existe", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
+    mockDb.order.findUnique.mockResolvedValue(null);
+    const result = await updateOrderStatus("o1", "SHIPPED");
+    expect(result.error).toBe("Pedido no encontrado.");
+  });
+
+  it("actualiza el estado de un pedido", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
+    mockDb.order.findUnique.mockResolvedValue({ id: "o1" });
+    const result = await updateOrderStatus("o1", "SHIPPED");
+    expect(result.ok).toBe(true);
+    expect(mockDb.order.update).toHaveBeenCalledWith({
+      where: { id: "o1" },
+      data: { status: "SHIPPED" },
+    });
   });
 });

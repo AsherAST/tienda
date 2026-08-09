@@ -26,7 +26,7 @@ export default async function AdminPage() {
         >
           <h2 className="font-semibold">Pedidos</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Gestionar pedidos de los clientes (próximamente).
+            Gestionar el estado de los pedidos de los clientes.
           </p>
         </Link>
       </div>
