@@ -1,5 +1,7 @@
-import Image from "next/image";
-import { db } from "@/lib/db";
+import { getProducts, getCategories } from "@/lib/products";
+import { parseCatalogParams } from "@/lib/catalog-params";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -9,72 +11,44 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-export default async function Home() {
-  const products = await db.product.findMany({
-    orderBy: { createdAt: "asc" },
-  });
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const query = parseCatalogParams(await searchParams);
+  const [products, categories] = await Promise.all([
+    getProducts(query),
+    getCategories(),
+  ]);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-12">
       <h1 className="text-3xl font-bold tracking-tight">Catálogo</h1>
       <p className="mt-2 text-zinc-500">
-        {products.length} productos disponibles
+        {products.length} producto{products.length !== 1 ? "s" : ""} disponible
+        {products.length !== 1 ? "s" : ""}
       </p>
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((product) => (
-          <article
-            key={product.id}
-            className="flex flex-col overflow-hidden rounded-xl border border-zinc-200"
-          >
-            <div className="relative aspect-[4/3] bg-zinc-100">
-              {product.imageUrl ? (
-                <Image
-                  src={product.imageUrl}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-zinc-400">
-                  Sin imagen
-                </div>
-              )}
-            </div>
-            <div className="flex flex-1 flex-col p-4">
-              <span className="text-xs uppercase tracking-wide text-zinc-400">
-                {product.category}
-              </span>
-              <h2 className="mt-1 font-semibold">{product.name}</h2>
-              <p className="mt-1 line-clamp-2 text-sm text-zinc-500">
-                {product.description}
-              </p>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-lg font-bold">
-                  {formatPrice(product.price)}
-                </span>
-                <span
-                  className={`text-sm ${
-                    product.stock > 0 ? "text-emerald-600" : "text-red-600"
-                  }`}
-                >
-                  {product.stock > 0
-                    ? `${product.stock} en stock`
-                    : "Agotado"}
-                </span>
-              </div>
-            </div>
-          </article>
-        ))}
+      <div className="mt-6">
+        <CatalogFilters
+          search={query.search}
+          category={query.category}
+          maxPrice={query.maxPrice}
+          sort={query.sort}
+          categories={categories}
+        />
       </div>
+      {products.length > 0 ? (
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-16 text-center text-zinc-500">
+          No se encontraron productos con esos filtros.
+        </p>
+      )}
     </main>
   );
 }
