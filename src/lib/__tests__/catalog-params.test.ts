@@ -39,6 +39,15 @@ describe("parseCatalogParams", () => {
     const result = parseCatalogParams({ q: ["uno", "dos"] });
     expect(result.search).toBe("uno");
   });
+
+  it("parsea la página", () => {
+    expect(parseCatalogParams({ pagina: "3" }).page).toBe(3);
+  });
+
+  it("ignora páginas no positivas", () => {
+    expect(parseCatalogParams({ pagina: "0" }).page).toBeUndefined();
+    expect(parseCatalogParams({ pagina: "abc" }).page).toBeUndefined();
+  });
 });
 
 describe("buildCatalogUrl", () => {

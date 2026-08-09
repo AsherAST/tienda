@@ -6,6 +6,7 @@ const catalogParamsSchema = z.object({
   categoria: z.string().trim().max(50).optional(),
   precio: z.string().trim().max(10).optional(),
   orden: z.enum(["recent", "price-asc", "price-desc"]).optional(),
+  pagina: z.string().trim().max(5).optional(),
 });
 
 const SORTS: Record<string, ProductSort> = {
@@ -23,14 +24,16 @@ export function parseCatalogParams(
   const parsed = catalogParamsSchema.safeParse(raw);
   if (!parsed.success) return {};
 
-  const { q, categoria, precio, orden } = parsed.data;
+  const { q, categoria, precio, orden, pagina } = parsed.data;
   const maxPrice = precio ? Number.parseInt(precio, 10) : undefined;
+  const page = pagina ? Number.parseInt(pagina, 10) : undefined;
 
   return {
     search: q || undefined,
     category: categoria || undefined,
     maxPrice: maxPrice && Number.isFinite(maxPrice) ? maxPrice : undefined,
     sort: orden ? SORTS[orden] : undefined,
+    page: page && page > 0 ? page : undefined,
   };
 }
 

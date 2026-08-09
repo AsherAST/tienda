@@ -6,6 +6,7 @@ const { mockDb } = vi.hoisted(() => {
       product: {
         findMany: vi.fn(),
         findUnique: vi.fn(),
+        count: vi.fn(),
       },
     },
   };
@@ -19,6 +20,7 @@ describe("getProducts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb.product.findMany.mockResolvedValue([]);
+    mockDb.product.count.mockResolvedValue(0);
   });
 
   it("construye where con búsqueda, categoría y precio máximo", async () => {
@@ -30,6 +32,8 @@ describe("getProducts", () => {
         price: { lte: 10000 },
       },
       orderBy: { createdAt: "asc" },
+      skip: 0,
+      take: 12,
     });
   });
 
@@ -38,7 +42,22 @@ describe("getProducts", () => {
     expect(mockDb.product.findMany).toHaveBeenCalledWith({
       where: {},
       orderBy: { price: "desc" },
+      skip: 0,
+      take: 12,
     });
+  });
+
+  it("paginiza desde la página indicada", async () => {
+    mockDb.product.findMany.mockResolvedValue([{ id: "p1" }]);
+    mockDb.product.count.mockResolvedValue(25);
+    const result = await getProducts({ page: 3 });
+    expect(mockDb.product.findMany).toHaveBeenCalledWith({
+      where: {},
+      orderBy: { createdAt: "asc" },
+      skip: 24,
+      take: 12,
+    });
+    expect(result).toEqual({ products: [{ id: "p1" }], total: 25 });
   });
 });
 

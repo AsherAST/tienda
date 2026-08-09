@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 
+export const CATALOG_PAGE_SIZE = 12;
+
 export type ProductSort = "recent" | "price-asc" | "price-desc";
 
 export type ProductQuery = {
@@ -8,6 +10,7 @@ export type ProductQuery = {
   category?: string;
   maxPrice?: number;
   sort?: ProductSort;
+  page?: number;
 };
 
 export async function getProducts(query: ProductQuery = {}) {
@@ -22,7 +25,19 @@ export async function getProducts(query: ProductQuery = {}) {
   if (query.sort === "price-desc") orderBy = { price: "desc" };
   if (query.sort === "recent") orderBy = { createdAt: "desc" };
 
-  return db.product.findMany({ where, orderBy });
+  const page = Math.max(query.page ?? 1, 1);
+
+  const [products, total] = await Promise.all([
+    db.product.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * CATALOG_PAGE_SIZE,
+      take: CATALOG_PAGE_SIZE,
+    }),
+    db.product.count({ where }),
+  ]);
+
+  return { products, total };
 }
 
 export async function getProductBySlug(slug: string) {

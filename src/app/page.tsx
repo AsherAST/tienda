@@ -1,5 +1,13 @@
-import { getProducts, getCategories } from "@/lib/products";
-import { parseCatalogParams } from "@/lib/catalog-params";
+import Link from "next/link";
+import {
+  getProducts,
+  getCategories,
+  CATALOG_PAGE_SIZE,
+} from "@/lib/products";
+import {
+  parseCatalogParams,
+  buildCatalogUrl,
+} from "@/lib/catalog-params";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import type { Metadata } from "next";
@@ -17,10 +25,22 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = parseCatalogParams(await searchParams);
-  const [products, categories] = await Promise.all([
+  const page = query.page ?? 1;
+  const [data, categories] = await Promise.all([
     getProducts(query),
     getCategories(),
   ]);
+  const { products, total } = data;
+  const totalPages = Math.max(Math.ceil(total / CATALOG_PAGE_SIZE), 1);
+
+  const paginationLink = (p: number) =>
+    buildCatalogUrl({
+      q: query.search,
+      categoria: query.category,
+      precio: query.maxPrice ? String(query.maxPrice) : undefined,
+      orden: query.sort,
+      pagina: p > 1 ? String(p) : undefined,
+    });
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-12">
@@ -50,14 +70,37 @@ export default async function Home({
       {products.length > 0 ? (
         <>
           <p className="mt-6 text-sm text-zinc-500">
-            {products.length} producto{products.length !== 1 ? "s" : ""}{" "}
-            disponible{products.length !== 1 ? "s" : ""}
+            {total} producto{total !== 1 ? "s" : ""} disponible
+            {total !== 1 ? "s" : ""}
           </p>
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
+          {totalPages > 1 ? (
+            <nav className="mt-10 flex items-center justify-center gap-4">
+              {page > 1 ? (
+                <Link
+                  href={paginationLink(page - 1)}
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm transition-colors hover:border-zinc-500"
+                >
+                  ← Anterior
+                </Link>
+              ) : null}
+              <span className="text-sm text-zinc-500">
+                Página {page} de {totalPages}
+              </span>
+              {page < totalPages ? (
+                <Link
+                  href={paginationLink(page + 1)}
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm transition-colors hover:border-zinc-500"
+                >
+                  Siguiente →
+                </Link>
+              ) : null}
+            </nav>
+          ) : null}
         </>
       ) : (
         <p className="mt-16 text-center text-zinc-500">

@@ -28,8 +28,27 @@ export async function updateOrderStatus(
     return { error: "Estado no válido." };
   }
 
-  const order = await db.order.findUnique({ where: { id: orderId } });
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
   if (!order) return { error: "Pedido no encontrado." };
+
+  if (status === "CANCELLED" && order.status !== "CANCELLED") {
+    await db.$transaction(async (tx) => {
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: "CANCELLED" },
+      });
+    });
+    return { ok: true };
+  }
 
   await db.order.update({
     where: { id: orderId },

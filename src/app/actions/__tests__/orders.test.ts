@@ -7,6 +7,7 @@ const { mockDb, cookieStore, mockAuth } = vi.hoisted(() => {
       product: {
         findMany: vi.fn(),
         updateMany: vi.fn(),
+        update: vi.fn(),
       },
       order: {
         create: vi.fn(),
@@ -162,12 +163,61 @@ describe("updateOrderStatus", () => {
 
   it("actualiza el estado de un pedido", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
-    mockDb.order.findUnique.mockResolvedValue({ id: "o1" });
+    mockDb.order.findUnique.mockResolvedValue({
+      id: "o1",
+      status: "PAID",
+      items: [],
+    });
     const result = await updateOrderStatus("o1", "SHIPPED");
     expect(result.ok).toBe(true);
     expect(mockDb.order.update).toHaveBeenCalledWith({
       where: { id: "o1" },
       data: { status: "SHIPPED" },
+    });
+  });
+
+  it("restaura el stock al cancelar un pedido", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
+    mockDb.order.findUnique.mockResolvedValue({
+      id: "o1",
+      status: "PAID",
+      items: [
+        { productId: "p1", quantity: 2 },
+        { productId: "p2", quantity: 1 },
+      ],
+    });
+    mockDb.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
+      fn(mockDb),
+    );
+    const result = await updateOrderStatus("o1", "CANCELLED");
+    expect(result.ok).toBe(true);
+    expect(mockDb.product.update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { stock: { increment: 2 } },
+    });
+    expect(mockDb.product.update).toHaveBeenCalledWith({
+      where: { id: "p2" },
+      data: { stock: { increment: 1 } },
+    });
+    expect(mockDb.order.update).toHaveBeenCalledWith({
+      where: { id: "o1" },
+      data: { status: "CANCELLED" },
+    });
+  });
+
+  it("no restaura stock dos veces si ya estaba cancelado", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
+    mockDb.order.findUnique.mockResolvedValue({
+      id: "o1",
+      status: "CANCELLED",
+      items: [{ productId: "p1", quantity: 2 }],
+    });
+    const result = await updateOrderStatus("o1", "CANCELLED");
+    expect(result.ok).toBe(true);
+    expect(mockDb.product.update).not.toHaveBeenCalled();
+    expect(mockDb.order.update).toHaveBeenCalledWith({
+      where: { id: "o1" },
+      data: { status: "CANCELLED" },
     });
   });
 });
