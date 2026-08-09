@@ -1,4 +1,5 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
@@ -77,6 +78,31 @@ const products = [
 ];
 
 async function main() {
+  const customerHash = await bcrypt.hash("demo1234", 12);
+  const adminHash = await bcrypt.hash("admin1234", 12);
+
+  await prisma.user.upsert({
+    where: { email: "demo@tienda.cl" },
+    update: { name: "Cliente Demo", passwordHash: customerHash },
+    create: {
+      name: "Cliente Demo",
+      email: "demo@tienda.cl",
+      passwordHash: customerHash,
+      role: "CUSTOMER",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "admin@tienda.cl" },
+    update: { name: "Admin Demo", passwordHash: adminHash },
+    create: {
+      name: "Admin Demo",
+      email: "admin@tienda.cl",
+      passwordHash: adminHash,
+      role: "ADMIN",
+    },
+  });
+
   for (const p of products) {
     await prisma.product.upsert({
       where: { slug: p.slug },
@@ -85,7 +111,10 @@ async function main() {
     });
   }
   const count = await prisma.product.count();
-  console.log(`✅ Seed completado. ${count} productos en la tienda.`);
+  const users = await prisma.user.count();
+  console.log(
+    `✅ Seed completado. ${count} productos y ${users} usuarios (demo@tienda.cl / demo1234 · admin@tienda.cl / admin1234).`,
+  );
 }
 
 main()
