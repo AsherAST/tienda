@@ -1,0 +1,96 @@
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../src/generated/prisma/client";
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
+
+const products = [
+  {
+    name: "Auriculares Inalámbricos Pro",
+    slug: "auriculares-inalambricos-pro",
+    description:
+      "Auriculares over-ear con cancelación activa de ruido, 30h de batería y Bluetooth 5.4.",
+    price: 12990,
+    category: "Audio",
+    imageUrl:
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80",
+    stock: 25,
+  },
+  {
+    name: "Teclado Mecánico RGB",
+    slug: "teclado-mecanico-rgb",
+    description:
+      "Teclado mecánico con switches red, retroiluminación RGB y carcasa de aluminio.",
+    price: 8990,
+    category: "Periféricos",
+    imageUrl:
+      "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&q=80",
+    stock: 40,
+  },
+  {
+    name: "Mouse Gamer 16000 DPI",
+    slug: "mouse-gamer-16000-dpi",
+    description:
+      "Mouse con sensor óptico de 16000 DPI, 8 botones programables y peso ultraligero.",
+    price: 5490,
+    category: "Periféricos",
+    imageUrl:
+      "https://images.unsplash.com/photo-1527814050087-3793815479db?w=600&q=80",
+    stock: 60,
+  },
+  {
+    name: "Monitor 27'' 4K",
+    slug: "monitor-27-4k",
+    description:
+      "Monitor IPS 27 pulgadas 4K UHD, 60Hz, HDR10 y cobertura 100% sRGB.",
+    price: 249990,
+    category: "Pantallas",
+    imageUrl:
+      "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80",
+    stock: 10,
+  },
+  {
+    name: "Webcam Full HD",
+    slug: "webcam-full-hd",
+    description:
+      "Cámara web 1080p con micrófono estéreo, corrección de luz y montaje universal.",
+    price: 19990,
+    category: "Cámaras",
+    imageUrl:
+      "https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=600&q=80",
+    stock: 15,
+  },
+  {
+    name: "Base de Carga Inalámbrica",
+    slug: "base-carga-inalambrica",
+    description:
+      "Cargador inalámbrico 15W compatible con Qi, con superficie antideslizante.",
+    price: 8990,
+    category: "Accesorios",
+    imageUrl:
+      "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80",
+    stock: 30,
+  },
+];
+
+async function main() {
+  for (const p of products) {
+    await prisma.product.upsert({
+      where: { slug: p.slug },
+      update: { ...p },
+      create: { ...p },
+    });
+  }
+  const count = await prisma.product.count();
+  console.log(`✅ Seed completado. ${count} productos en la tienda.`);
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());
