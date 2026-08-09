@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/LogoutButton";
+import { CartBadge } from "@/components/cart/CartBadge";
 
 export async function Navbar() {
   const session = await auth();
@@ -13,6 +14,7 @@ export async function Navbar() {
           Tienda
         </Link>
         <nav className="flex items-center gap-4 text-sm">
+          <CartBadge />
           {session?.user ? (
             <>
               <Link href="/cuenta" className="hover:underline">
