@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { OrderStatus } from "@/generated/prisma/enums";
+import { shippingSchema } from "@/lib/validators";
 import {
   getCartFromCookie,
   buildCartSummary,
@@ -37,10 +38,19 @@ export async function updateOrderStatus(
   return { ok: true };
 }
 
-export async function placeOrder(): Promise<PlaceOrderResult> {
+export async function placeOrder(
+  input: unknown,
+): Promise<PlaceOrderResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Debes iniciar sesión para confirmar el pedido." };
+  }
+
+  const parsed = shippingSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Revisa los datos de envío.",
+    };
   }
 
   const cart = await getCartFromCookie();
@@ -68,6 +78,10 @@ export async function placeOrder(): Promise<PlaceOrderResult> {
           userId: session.user.id!,
           status: "PAID",
           total: summary.subtotal,
+          shippingName: parsed.data.name,
+          shippingAddress: parsed.data.address,
+          shippingCity: parsed.data.city,
+          shippingPhone: parsed.data.phone,
           items: {
             create: summary.items.map((i) => ({
               productId: i.id,

@@ -53,6 +53,25 @@ export default async function PedidoPage({
           </li>
         ))}
       </ul>
+      {order.shippingName ? (
+        <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+          <h2 className="text-sm font-semibold">Datos de envío</h2>
+          <dl className="mt-2 space-y-1 text-sm text-zinc-600">
+            <div>
+              <span className="text-zinc-500">Nombre: </span>
+              {order.shippingName}
+            </div>
+            <div>
+              <span className="text-zinc-500">Dirección: </span>
+              {order.shippingAddress} · {order.shippingCity}
+            </div>
+            <div>
+              <span className="text-zinc-500">Teléfono: </span>
+              {order.shippingPhone}
+            </div>
+          </dl>
+        </div>
+      ) : null}
       <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 text-base font-semibold">
         <span>Total</span>
         <span>{formatPrice(order.total)}</span>

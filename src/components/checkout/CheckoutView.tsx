@@ -7,17 +7,38 @@ import { useCart } from "@/components/cart/CartProvider";
 import { placeOrder } from "@/app/actions/orders";
 import { formatPrice } from "@/lib/format";
 
-export function CheckoutView() {
+type Shipping = {
+  name: string;
+  address: string;
+  city: string;
+  phone: string;
+};
+
+const inputClass =
+  "mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none";
+const labelClass = "block text-sm font-medium text-zinc-700";
+
+export function CheckoutView({ userName }: { userName?: string }) {
   const router = useRouter();
   const { summary } = useCart();
+  const [shipping, setShipping] = useState<Shipping>({
+    name: userName ?? "",
+    address: "",
+    city: "",
+    phone: "",
+  });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | undefined>();
+
+  function set<K extends keyof Shipping>(key: K, value: string) {
+    setShipping((prev) => ({ ...prev, [key]: value }));
+  }
 
   async function confirm() {
     setPending(true);
     setError(undefined);
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const result = await placeOrder();
+    const result = await placeOrder(shipping);
     if (result.error) {
       setError(result.error);
       setPending(false);
@@ -42,22 +63,85 @@ export function CheckoutView() {
 
   return (
     <div className="flex flex-col gap-8 lg:flex-row">
-      <ul className="flex-1 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {summary.items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-center justify-between gap-4 p-4"
-          >
+      <div className="flex-1 space-y-8">
+        <section className="rounded-xl border border-zinc-200 bg-white p-6">
+          <h2 className="text-lg font-semibold">Datos de envío</h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-zinc-500">
-                {item.qty} × {formatPrice(item.price)}
-              </p>
+              <label htmlFor="ship-name" className={labelClass}>
+                Nombre de contacto
+              </label>
+              <input
+                id="ship-name"
+                required
+                value={shipping.name}
+                onChange={(e) => set("name", e.target.value)}
+                className={inputClass}
+              />
             </div>
-            <div className="font-semibold">{formatPrice(item.lineTotal)}</div>
-          </li>
-        ))}
-      </ul>
+            <div>
+              <label htmlFor="ship-phone" className={labelClass}>
+                Teléfono
+              </label>
+              <input
+                id="ship-phone"
+                required
+                value={shipping.phone}
+                onChange={(e) => set("phone", e.target.value)}
+                className={inputClass}
+                placeholder="+56 9 ..."
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="ship-address" className={labelClass}>
+                Dirección
+              </label>
+              <input
+                id="ship-address"
+                required
+                value={shipping.address}
+                onChange={(e) => set("address", e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="ship-city" className={labelClass}>
+                Ciudad / Comuna
+              </label>
+              <input
+                id="ship-city"
+                required
+                value={shipping.city}
+                onChange={(e) => set("city", e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-zinc-200 bg-white p-6">
+          <h2 className="text-lg font-semibold">Tu pedido</h2>
+          <ul className="mt-4 divide-y divide-zinc-100">
+            {summary.items.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-4 py-3"
+              >
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-sm text-zinc-500">
+                    {item.qty} × {formatPrice(item.price)}
+                  </p>
+                </div>
+                <div className="font-semibold">
+                  {formatPrice(item.lineTotal)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
       <aside className="h-fit w-full rounded-xl border border-zinc-200 bg-white p-6 lg:w-72">
         <h2 className="text-lg font-semibold">Resumen</h2>
         <dl className="mt-4 space-y-2 text-sm">

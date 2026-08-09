@@ -76,6 +76,12 @@ export default async function AdminPedidosPage() {
                     </li>
                   ))}
                 </ul>
+                {order.shippingName ? (
+                  <p className="mt-3 border-t border-zinc-100 pt-3 text-sm text-zinc-500">
+                    Envío a: {order.shippingName} · {order.shippingAddress},{" "}
+                    {order.shippingCity} · {order.shippingPhone}
+                  </p>
+                ) : null}
               </div>
             );
           })}

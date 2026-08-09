@@ -38,6 +38,20 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+export const shippingSchema = z.object({
+  name: z.string().min(2, "El nombre de contacto es requerido").trim(),
+  address: z
+    .string()
+    .min(5, "La dirección debe tener al menos 5 caracteres")
+    .trim(),
+  city: z.string().min(2, "La ciudad/comuna es requerida").trim(),
+  phone: z
+    .string()
+    .min(6, "El teléfono debe tener al menos 6 caracteres")
+    .trim(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
+export type ShippingInput = z.infer<typeof shippingSchema>;

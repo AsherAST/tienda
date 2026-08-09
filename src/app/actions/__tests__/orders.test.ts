@@ -47,6 +47,13 @@ function seedCart(items: { id: string; qty: number }[]) {
   cookieStore.set(cartCookieName, { value: serializeCart(items) });
 }
 
+const shipping = {
+  name: "Juan Pérez",
+  address: "Av. Siempre Viva 742",
+  city: "Santiago",
+  phone: "+56912345678",
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   cookieStore.clear();
@@ -65,7 +72,7 @@ beforeEach(() => {
 describe("placeOrder", () => {
   it("crea el pedido, descuenta stock y limpia el carrito", async () => {
     seedCart([{ id: "p1", qty: 2 }]);
-    const result = await placeOrder();
+    const result = await placeOrder(shipping);
 
     expect(result.error).toBeUndefined();
     expect(result.orderId).toBe("order-1");
@@ -79,6 +86,10 @@ describe("placeOrder", () => {
           userId: "u1",
           status: "PAID",
           total: 17980,
+          shippingName: "Juan Pérez",
+          shippingAddress: "Av. Siempre Viva 742",
+          shippingCity: "Santiago",
+          shippingPhone: "+56912345678",
           items: {
             create: [
               { productId: "p1", quantity: 2, price: 8990 },
@@ -90,10 +101,17 @@ describe("placeOrder", () => {
     expect(cookieStore.get(cartCookieName)?.value).toBe("");
   });
 
+  it("valida los datos de envío", async () => {
+    seedCart([{ id: "p1", qty: 1 }]);
+    const result = await placeOrder({ ...shipping, address: "abc" });
+    expect(result.error).toBeDefined();
+    expect(mockDb.order.create).not.toHaveBeenCalled();
+  });
+
   it("devuelve error si no hay sesión", async () => {
     mockAuth.mockResolvedValue(null);
     seedCart([{ id: "p1", qty: 1 }]);
-    const result = await placeOrder();
+    const result = await placeOrder(shipping);
     expect(result.error).toBe(
       "Debes iniciar sesión para confirmar el pedido.",
     );
@@ -101,7 +119,7 @@ describe("placeOrder", () => {
   });
 
   it("devuelve error si el carrito está vacío", async () => {
-    const result = await placeOrder();
+    const result = await placeOrder(shipping);
     expect(result.error).toBe("Tu carrito está vacío.");
     expect(mockDb.order.create).not.toHaveBeenCalled();
   });
@@ -109,7 +127,7 @@ describe("placeOrder", () => {
   it("revierte si no hay stock suficiente", async () => {
     seedCart([{ id: "p1", qty: 2 }]);
     mockDb.product.updateMany.mockResolvedValue({ count: 0 });
-    const result = await placeOrder();
+    const result = await placeOrder(shipping);
     expect(result.error).toBe(
       "No se pudo completar el pedido. Intenta nuevamente.",
     );
