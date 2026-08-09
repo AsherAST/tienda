@@ -13,7 +13,7 @@ export default async function AdminPage() {
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
           href="/admin/productos"
-          className="rounded-xl border border-zinc-200 p-6 transition-colors hover:border-zinc-400"
+          className="rounded-xl border border-zinc-200 bg-white p-6 transition-colors hover:border-zinc-400"
         >
           <h2 className="font-semibold">Productos</h2>
           <p className="mt-1 text-sm text-zinc-500">
@@ -22,7 +22,7 @@ export default async function AdminPage() {
         </Link>
         <Link
           href="/admin/pedidos"
-          className="rounded-xl border border-zinc-200 p-6 transition-colors hover:border-zinc-400"
+          className="rounded-xl border border-zinc-200 bg-white p-6 transition-colors hover:border-zinc-400"
         >
           <h2 className="font-semibold">Pedidos</h2>
           <p className="mt-1 text-sm text-zinc-500">

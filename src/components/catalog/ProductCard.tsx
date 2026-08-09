@@ -7,21 +7,26 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/producto/${product.slug}`}
-      className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 transition-shadow hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg"
     >
-      <div className="relative aspect-[4/3] bg-zinc-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 33vw"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-zinc-400">
             Sin imagen
           </div>
+        )}
+        {product.stock === 0 && (
+          <span className="absolute left-3 top-3 rounded-full bg-zinc-900/80 px-2.5 py-1 text-xs font-medium text-white">
+            Agotado
+          </span>
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">

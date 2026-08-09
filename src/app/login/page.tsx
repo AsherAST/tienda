@@ -8,7 +8,7 @@ export default function LoginPage() {
       <p className="mt-1 text-sm text-zinc-500">
         Accede a tu cuenta para hacer pedidos.
       </p>
-      <div className="mt-8">
+      <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-6">
         <LoginForm />
       </div>
       <p className="mt-6 text-sm text-zinc-500">

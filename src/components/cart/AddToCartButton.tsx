@@ -35,7 +35,11 @@ export function AddToCartButton({ productId, stock }: Props) {
         type="button"
         onClick={handleClick}
         disabled={disabled || pending}
-        className="rounded-lg bg-zinc-900 px-6 py-3 font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className={`rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          added
+            ? "bg-emerald-600 hover:bg-emerald-600"
+            : "bg-zinc-900 hover:bg-zinc-700"
+        }`}
       >
         {pending
           ? "Agregando…"

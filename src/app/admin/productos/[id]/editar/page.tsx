@@ -29,7 +29,7 @@ export default async function EditarProductoPage({
       <h1 className="mt-4 text-2xl font-bold tracking-tight">
         Editar producto
       </h1>
-      <div className="mt-6 rounded-xl border border-zinc-200 p-6">
+      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
         <ProductForm
           initial={{
             name: product.name,

@@ -28,7 +28,7 @@ export function CheckoutView() {
 
   if (summary.items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 p-12 text-center">
+      <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-12 text-center">
         <p className="text-zinc-500">Tu carrito está vacío.</p>
         <Link
           href="/"
@@ -42,7 +42,7 @@ export function CheckoutView() {
 
   return (
     <div className="flex flex-col gap-8 lg:flex-row">
-      <ul className="flex-1 divide-y divide-zinc-200 rounded-xl border border-zinc-200">
+      <ul className="flex-1 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
         {summary.items.map((item) => (
           <li
             key={item.id}
@@ -58,7 +58,7 @@ export function CheckoutView() {
           </li>
         ))}
       </ul>
-      <aside className="h-fit w-full rounded-xl border border-zinc-200 p-6 lg:w-72">
+      <aside className="h-fit w-full rounded-xl border border-zinc-200 bg-white p-6 lg:w-72">
         <h2 className="text-lg font-semibold">Resumen</h2>
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between">

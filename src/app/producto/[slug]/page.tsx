@@ -54,19 +54,38 @@ export default async function ProductPage({ params }: Props) {
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
             {product.name}
           </h1>
-          <p className="mt-4 text-lg text-zinc-600">{product.description}</p>
-          <div className="mt-6 text-3xl font-bold">{formatPrice(product.price)}</div>
-          <p
-            className={`mt-2 text-sm ${
-              product.stock > 0 ? "text-emerald-600" : "text-red-600"
-            }`}
-          >
-            {product.stock > 0
-              ? `${product.stock} unidades en stock`
-              : "Agotado"}
-          </p>
+          <p className="mt-4 text-zinc-600">{product.description}</p>
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl font-bold">
+                {formatPrice(product.price)}
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                  product.stock > 0
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-red-50 text-red-700"
+                }`}
+              >
+                {product.stock > 0 ? "En stock" : "Agotado"}
+              </span>
+            </div>
+            {product.stock > 0 && (
+              <p className="mt-2 text-sm text-zinc-500">
+                {product.stock} unidades disponibles
+              </p>
+            )}
+          </div>
           <div className="mt-8">
             <AddToCartButton productId={product.id} stock={product.stock} />
+          </div>
+          <div className="mt-6">
+            <Link
+              href="/"
+              className="text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+            >
+              ← Volver al catálogo
+            </Link>
           </div>
         </div>
       </div>

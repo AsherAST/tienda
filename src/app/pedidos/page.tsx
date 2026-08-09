@@ -17,7 +17,7 @@ export default async function PedidosPage() {
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-12">
       <h1 className="text-3xl font-bold tracking-tight">Mis pedidos</h1>
       {orders.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-zinc-300 p-12 text-center">
+        <div className="mt-8 rounded-xl border border-dashed border-zinc-300 bg-white p-12 text-center">
           <p className="text-zinc-500">Aún no tienes pedidos.</p>
           <Link
             href="/"
@@ -27,7 +27,7 @@ export default async function PedidosPage() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 divide-y divide-zinc-200 rounded-xl border border-zinc-200">
+        <ul className="mt-8 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
           {orders.map((order) => {
             const status = orderStatusInfo(order.status);
             const productCount = order.items.reduce(

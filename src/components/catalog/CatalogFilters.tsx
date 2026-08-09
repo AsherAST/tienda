@@ -27,13 +27,20 @@ export function CatalogFilters({
 }: Props) {
   const router = useRouter();
 
-  function apply(newValues: Record<string, string>) {
+  function apply(overrides: Record<string, string>) {
+    const next = {
+      q: search ?? "",
+      categoria: category ?? "",
+      precio: maxPrice ? String(maxPrice) : "",
+      orden: sort ?? "",
+      ...overrides,
+    };
     router.replace(
       buildCatalogUrl({
-        q: newValues.q?.trim() || undefined,
-        categoria: newValues.categoria || undefined,
-        precio: newValues.precio || undefined,
-        orden: newValues.orden || undefined,
+        q: next.q.trim() || undefined,
+        categoria: next.categoria || undefined,
+        precio: next.precio || undefined,
+        orden: next.orden || undefined,
       }),
       { scroll: false },
     );
@@ -58,7 +65,7 @@ export function CatalogFilters({
           name="q"
           defaultValue={search}
           placeholder="Buscar productos…"
-          className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
         />
         <button
           type="submit"
@@ -71,7 +78,7 @@ export function CatalogFilters({
         <select
           name="categoria"
           defaultValue={category ?? ""}
-          onChange={(e) => apply({ categoria: e.target.value, orden: sort ?? "" })}
+          onChange={(e) => apply({ categoria: e.target.value })}
           className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
         >
           <option value="">Todas las categorías</option>
@@ -84,7 +91,7 @@ export function CatalogFilters({
         <select
           name="precio"
           defaultValue={maxPrice ? String(maxPrice) : ""}
-          onChange={(e) => apply({ precio: e.target.value, orden: sort ?? "" })}
+          onChange={(e) => apply({ precio: e.target.value })}
           className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
         >
           {PRICE_FILTERS.map((p) => (

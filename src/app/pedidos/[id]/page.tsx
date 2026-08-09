@@ -35,7 +35,7 @@ export default async function PedidoPage({
         {new Date(order.createdAt).toLocaleString("es-CL")} ·{" "}
         <span className={status.className}>{status.label}</span>
       </p>
-      <ul className="mt-8 divide-y divide-zinc-200 rounded-xl border border-zinc-200">
+      <ul className="mt-8 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
         {order.items.map((item) => (
           <li
             key={item.id}
@@ -53,7 +53,7 @@ export default async function PedidoPage({
           </li>
         ))}
       </ul>
-      <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 p-4 text-base font-semibold">
+      <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 text-base font-semibold">
         <span>Total</span>
         <span>{formatPrice(order.total)}</span>
       </div>
