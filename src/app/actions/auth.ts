@@ -5,16 +5,19 @@ import { AuthError } from "next-auth";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/auth";
 import {
+  forgotPasswordSchema,
   registerSchema,
   resetPasswordSchema,
+  verifyCodeSchema,
 } from "@/lib/validators";
 import {
-  createPasswordResetToken,
+  createPasswordResetCode,
+  canResendCode,
+  verifyResetCode,
   consumeResetToken,
-  getValidResetToken,
-  getAppOrigin,
-  buildResetUrl,
+  getValidChangeToken,
 } from "@/lib/password-reset";
+import { sendPasswordResetCode } from "@/lib/mailer";
 
 export type AuthState = { error?: string } | undefined;
 
@@ -80,40 +83,74 @@ export async function logout() {
 }
 
 export type ResetState =
-  | { error?: string; ok?: boolean; resetUrl?: string }
+  | { error?: string; ok?: boolean; email?: string; changeToken?: string }
   | undefined;
 
 export async function requestPasswordReset(
   _prevState: ResetState,
   formData: FormData,
 ): Promise<ResetState> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const parsed = forgotPasswordSchema.safeParse({
+    email: formData.get("email"),
+  });
+  if (!parsed.success) {
     return { error: "Escribe un correo válido." };
   }
 
+  const { email } = parsed.data;
   const user = await db.user.findUnique({ where: { email } });
-  if (user) {
-    const token = await createPasswordResetToken(user.id);
-    return { resetUrl: buildResetUrl(getAppOrigin(), token) };
+
+  if (user && (await canResendCode(user.id))) {
+    const code = await createPasswordResetCode(user.id);
+    try {
+      await sendPasswordResetCode(email, code);
+    } catch (err) {
+      console.error("FORGOT-PASSWORD-EMAIL-ERROR", err);
+    }
   }
 
-  return { ok: true, resetUrl: undefined };
+  return { ok: true, email };
+}
+
+export async function verifyResetCodeAction(
+  _prevState: ResetState,
+  formData: FormData,
+): Promise<ResetState> {
+  const parsed = verifyCodeSchema.safeParse({
+    email: formData.get("email"),
+    code: formData.get("code"),
+  });
+  if (!parsed.success) {
+    return { error: "El código es inválido o ya expiró." };
+  }
+
+  const { email, code } = parsed.data;
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user) {
+    return { error: "El código es inválido o ya expiró." };
+  }
+
+  const result = await verifyResetCode(user.id, code);
+  if (!result.ok) {
+    return { error: "El código es inválido o ya expiró." };
+  }
+
+  return { ok: true, changeToken: result.changeToken };
 }
 
 export async function resetPassword(
   _prevState: ResetState,
   formData: FormData,
 ): Promise<ResetState> {
-  const token = String(formData.get("token") ?? "");
   const parsed = resetPasswordSchema.safeParse({
+    changeToken: formData.get("changeToken"),
     password: formData.get("password"),
   });
   if (!parsed.success) {
     return { error: "La contraseña debe tener al menos 8 caracteres." };
   }
 
-  const record = await getValidResetToken(token);
+  const record = await getValidChangeToken(parsed.data.changeToken);
   if (!record) {
     return { error: "El enlace es inválido o ya expiró." };
   }

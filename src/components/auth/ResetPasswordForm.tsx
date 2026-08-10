@@ -1,59 +1,76 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { resetPassword } from "@/app/actions/auth";
 
 const initialState = undefined;
 
-export function ResetPasswordForm({ token }: { token: string }) {
+function subscribe() {
+  return () => {};
+}
+
+export function ResetPasswordForm() {
+  const router = useRouter();
   const [state, action, pending] = useActionState(resetPassword, initialState);
 
-  if (state?.ok) {
-    return (
-      <div className="flex flex-col gap-4">
-        <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-          Tu contraseña fue actualizada correctamente.
-        </p>
-        <Link
-          href="/login"
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-center text-white transition-colors hover:bg-zinc-700"
-        >
-          Iniciar sesión
-        </Link>
-      </div>
-    );
-  }
+  const changeToken = useSyncExternalStore(
+    subscribe,
+    () => sessionStorage.getItem("changeToken") ?? "",
+    () => "",
+  );
+
+  useEffect(() => {
+    if (state?.ok) {
+      sessionStorage.removeItem("changeToken");
+      router.push("/login");
+    }
+  }, [state, router]);
 
   return (
-    <form action={action} className="flex flex-col gap-4">
-      <input type="hidden" name="token" value={token} />
-      {state?.error && (
+    <div className="flex flex-col gap-4">
+      {!changeToken ? (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-          {state.error}
+          No hay un código verificado. Solicita un nuevo código de recuperación.
         </p>
+      ) : (
+        <form action={action} className="flex flex-col gap-4">
+          <input type="hidden" name="changeToken" value={changeToken} />
+          {state?.error && (
+            <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+              {state.error}
+            </p>
+          )}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-sm font-medium">
+              Nueva contraseña
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+          >
+            {pending ? "Guardando…" : "Cambiar contraseña"}
+          </button>
+        </form>
       )}
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Nueva contraseña
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-        />
-      </div>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
-      >
-        {pending ? "Guardando…" : "Cambiar contraseña"}
-      </button>
-    </form>
+      <p className="text-sm text-zinc-500">
+        <Link href="/login" className="font-medium text-zinc-900 underline">
+          Volver a iniciar sesión
+        </Link>
+      </p>
+    </div>
   );
 }

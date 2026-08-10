@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { mockDb, MockAuthError, mockSignIn, mockPasswordReset } = vi.hoisted(() => {
+const { mockDb, MockAuthError, mockSignIn, mockPasswordReset, mockMailer } = vi.hoisted(() => {
   const mockDb = {
     user: {
       findUnique: vi.fn(),
@@ -18,11 +18,14 @@ const { mockDb, MockAuthError, mockSignIn, mockPasswordReset } = vi.hoisted(() =
     MockAuthError: class MockAuthError extends Error {},
     mockSignIn: vi.fn(),
     mockPasswordReset: {
-      createPasswordResetToken: vi.fn(),
+      createPasswordResetCode: vi.fn(),
+      canResendCode: vi.fn(),
+      verifyResetCode: vi.fn(),
       consumeResetToken: vi.fn(),
-      getValidResetToken: vi.fn(),
-      getAppOrigin: vi.fn(),
-      buildResetUrl: vi.fn(),
+      getValidChangeToken: vi.fn(),
+    },
+    mockMailer: {
+      sendPasswordResetCode: vi.fn(),
     },
   };
 });
@@ -41,17 +44,30 @@ vi.mock("@/auth", () => ({
 }));
 
 vi.mock("@/lib/password-reset", () => ({
-  createPasswordResetToken: (...args: unknown[]) =>
-    mockPasswordReset.createPasswordResetToken(...args),
+  createPasswordResetCode: (...args: unknown[]) =>
+    mockPasswordReset.createPasswordResetCode(...args),
+  canResendCode: (...args: unknown[]) =>
+    mockPasswordReset.canResendCode(...args),
+  verifyResetCode: (...args: unknown[]) =>
+    mockPasswordReset.verifyResetCode(...args),
   consumeResetToken: (...args: unknown[]) =>
     mockPasswordReset.consumeResetToken(...args),
-  getValidResetToken: (...args: unknown[]) =>
-    mockPasswordReset.getValidResetToken(...args),
-  getAppOrigin: (...args: unknown[]) => mockPasswordReset.getAppOrigin(...args),
-  buildResetUrl: (...args: unknown[]) => mockPasswordReset.buildResetUrl(...args),
+  getValidChangeToken: (...args: unknown[]) =>
+    mockPasswordReset.getValidChangeToken(...args),
 }));
 
-import { login, register, requestPasswordReset, resetPassword } from "@/app/actions/auth";
+vi.mock("@/lib/mailer", () => ({
+  sendPasswordResetCode: (...args: unknown[]) =>
+    mockMailer.sendPasswordResetCode(...args),
+}));
+
+import {
+  login,
+  register,
+  requestPasswordReset,
+  verifyResetCodeAction,
+  resetPassword,
+} from "@/app/actions/auth";
 
 function form(data: Record<string, string>) {
   const f = new FormData();
@@ -119,22 +135,71 @@ describe("requestPasswordReset", () => {
     expect(mockDb.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("envía el email y crea el token si el usuario existe", async () => {
+  it("envía el código por email si el usuario existe", async () => {
     mockDb.user.findUnique.mockResolvedValue({ id: "u1", email: "demo@tienda.cl" });
-    mockPasswordReset.createPasswordResetToken.mockResolvedValue("tok123");
-    mockPasswordReset.getAppOrigin.mockReturnValue("http://localhost:3000");
-    mockPasswordReset.buildResetUrl.mockReturnValue("http://localhost:3000/recuperar/tok123");
+    mockPasswordReset.canResendCode.mockResolvedValue(true);
+    mockPasswordReset.createPasswordResetCode.mockResolvedValue("123456");
 
     const result = await requestPasswordReset(undefined, form({ email: "demo@tienda.cl" }));
-    expect(result?.resetUrl).toBe("http://localhost:3000/recuperar/tok123");
-    expect(mockPasswordReset.createPasswordResetToken).toHaveBeenCalledWith("u1");
+    expect(result?.ok).toBe(true);
+    expect(result?.changeToken).toBeUndefined();
+    expect(mockPasswordReset.createPasswordResetCode).toHaveBeenCalledWith("u1");
+    expect(mockMailer.sendPasswordResetCode).toHaveBeenCalledWith("demo@tienda.cl", "123456");
   });
 
   it("no filtra usuarios inexistentes (misma respuesta ok)", async () => {
     mockDb.user.findUnique.mockResolvedValue(null);
     const result = await requestPasswordReset(undefined, form({ email: "nadie@tienda.cl" }));
     expect(result?.ok).toBe(true);
-    expect(mockPasswordReset.createPasswordResetToken).not.toHaveBeenCalled();
+    expect(mockPasswordReset.createPasswordResetCode).not.toHaveBeenCalled();
+  });
+
+  it("no reenvía durante el cooldown", async () => {
+    mockDb.user.findUnique.mockResolvedValue({ id: "u1", email: "demo@tienda.cl" });
+    mockPasswordReset.canResendCode.mockResolvedValue(false);
+
+    const result = await requestPasswordReset(undefined, form({ email: "demo@tienda.cl" }));
+    expect(result?.ok).toBe(true);
+    expect(mockPasswordReset.createPasswordResetCode).not.toHaveBeenCalled();
+  });
+});
+
+describe("verifyResetCodeAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("devuelve el changeToken si el código es válido", async () => {
+    mockDb.user.findUnique.mockResolvedValue({ id: "u1", email: "demo@tienda.cl" });
+    mockPasswordReset.verifyResetCode.mockResolvedValue({ ok: true, changeToken: "ct123" });
+
+    const result = await verifyResetCodeAction(
+      undefined,
+      form({ email: "demo@tienda.cl", code: "123456" }),
+    );
+    expect(result?.ok).toBe(true);
+    expect(result?.changeToken).toBe("ct123");
+    expect(mockPasswordReset.verifyResetCode).toHaveBeenCalledWith("u1", "123456");
+  });
+
+  it("rechaza un código inválido", async () => {
+    mockDb.user.findUnique.mockResolvedValue({ id: "u1", email: "demo@tienda.cl" });
+    mockPasswordReset.verifyResetCode.mockResolvedValue({ ok: false, reason: "invalid" });
+
+    const result = await verifyResetCodeAction(
+      undefined,
+      form({ email: "demo@tienda.cl", code: "000000" }),
+    );
+    expect(result?.error).toBe("El código es inválido o ya expiró.");
+  });
+
+  it("rechaza un código mal formado", async () => {
+    const result = await verifyResetCodeAction(
+      undefined,
+      form({ email: "demo@tienda.cl", code: "abc" }),
+    );
+    expect(result?.error).toBeTruthy();
+    expect(mockDb.user.findUnique).not.toHaveBeenCalled();
   });
 });
 
@@ -144,20 +209,20 @@ describe("resetPassword", () => {
   });
 
   it("rechaza contraseña corta", async () => {
-    const result = await resetPassword(undefined, form({ token: "t", password: "123" }));
+    const result = await resetPassword(undefined, form({ changeToken: "t", password: "123" }));
     expect(result?.error).toBeTruthy();
     expect(mockDb.user.update).not.toHaveBeenCalled();
   });
 
-  it("rechaza token inválido o expirado", async () => {
-    mockPasswordReset.getValidResetToken.mockResolvedValue(null);
-    const result = await resetPassword(undefined, form({ token: "malo", password: "nueva12345" }));
+  it("rechaza changeToken inválido o expirado", async () => {
+    mockPasswordReset.getValidChangeToken.mockResolvedValue(null);
+    const result = await resetPassword(undefined, form({ changeToken: "malo", password: "nueva12345" }));
     expect(result?.error).toBe("El enlace es inválido o ya expiró.");
   });
 
-  it("actualiza la contraseña y consume el token", async () => {
-    mockPasswordReset.getValidResetToken.mockResolvedValue({ id: "rt1", userId: "u1" });
-    const result = await resetPassword(undefined, form({ token: "bueno", password: "nueva12345" }));
+  it("actualiza la contraseña y consume el changeToken", async () => {
+    mockPasswordReset.getValidChangeToken.mockResolvedValue({ id: "rt1", userId: "u1" });
+    const result = await resetPassword(undefined, form({ changeToken: "bueno", password: "nueva12345" }));
     expect(result?.ok).toBe(true);
     expect(mockDb.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
