@@ -4,7 +4,17 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/auth";
-import { registerSchema } from "@/lib/validators";
+import {
+  registerSchema,
+  resetPasswordSchema,
+} from "@/lib/validators";
+import {
+  createPasswordResetToken,
+  consumeResetToken,
+  getValidResetToken,
+  sendPasswordResetEmail,
+  buildResetUrl,
+} from "@/lib/password-reset";
 
 export type AuthState = { error?: string } | undefined;
 
@@ -67,4 +77,62 @@ export async function login(
 
 export async function logout() {
   await signOut({ redirectTo: "/" });
+}
+
+export type ResetState = { error?: string; ok?: boolean } | undefined;
+
+export async function requestPasswordReset(
+  _prevState: ResetState,
+  formData: FormData,
+): Promise<ResetState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Escribe un correo válido." };
+  }
+
+  const user = await db.user.findUnique({ where: { email } });
+  if (user) {
+    const token = await createPasswordResetToken(user.id);
+    const origin =
+      process.env.APP_URL ??
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+    const resetUrl = buildResetUrl(origin, token);
+    try {
+      await sendPasswordResetEmail(user.email, resetUrl);
+    } catch (error) {
+      console.error("RESET-EMAIL-ERROR", error);
+      return { error: "No se pudo enviar el correo. Intenta de nuevo." };
+    }
+  }
+
+  return { ok: true };
+}
+
+export async function resetPassword(
+  _prevState: ResetState,
+  formData: FormData,
+): Promise<ResetState> {
+  const token = String(formData.get("token") ?? "");
+  const parsed = resetPasswordSchema.safeParse({
+    password: formData.get("password"),
+  });
+  if (!parsed.success) {
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+
+  const record = await getValidResetToken(token);
+  if (!record) {
+    return { error: "El enlace es inválido o ya expiró." };
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  await db.user.update({
+    where: { id: record.userId },
+    data: { passwordHash },
+  });
+  await consumeResetToken(record.id);
+
+  return { ok: true };
 }

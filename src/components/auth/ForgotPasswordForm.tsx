@@ -1,13 +1,24 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
-import { login } from "@/app/actions/auth";
+import { requestPasswordReset } from "@/app/actions/auth";
 
 const initialState = undefined;
 
-export function LoginForm() {
-  const [state, action, pending] = useActionState(login, initialState);
+export function ForgotPasswordForm() {
+  const [state, action, pending] = useActionState(
+    requestPasswordReset,
+    initialState,
+  );
+
+  if (state?.ok) {
+    return (
+      <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+        Si existe una cuenta con ese correo, recibirás un enlace para
+        restablecer tu contraseña.
+      </p>
+    );
+  }
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -29,31 +40,12 @@ export function LoginForm() {
           className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Contraseña
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-        />
-        <Link
-          href="/recuperar"
-          className="mt-1 text-right text-xs text-zinc-500 underline hover:text-zinc-700"
-        >
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </div>
       <button
         type="submit"
         disabled={pending}
         className="rounded-lg bg-zinc-900 px-4 py-2 text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
       >
-        {pending ? "Ingresando…" : "Ingresar"}
+        {pending ? "Enviando…" : "Enviar enlace de recuperación"}
       </button>
     </form>
   );

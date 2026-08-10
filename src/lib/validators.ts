@@ -51,6 +51,12 @@ export const shippingSchema = z.object({
     .trim(),
 });
 
+export const resetPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres"),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ProductInput = z.infer<typeof productSchema>;

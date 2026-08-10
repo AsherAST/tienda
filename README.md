@@ -8,6 +8,7 @@ E-commerce full-stack con catálogo, búsqueda y filtros, carrito, checkout con 
 - **Carrito**: agregar/quitar productos, cantidades y subtotal, persistente en cookies.
 - **Checkout y pedidos**: datos de envío (nombre, dirección, ciudad, teléfono), creación transaccional de pedidos con descuento de stock, "Mis pedidos" con detalle. Cancelación de pedido que devuelve stock.
 - **Autenticación**: Auth.js v5 con credenciales y roles `CUSTOMER` / `ADMIN`. Registro, login, logout y protección de rutas.
+- **Recuperación de contraseña**: enlace "¿Olvidaste tu contraseña?" con token de un solo uso (expira en 1 h) enviado por correo (Resend) y página para definir una nueva.
 - **Panel admin**: CRUD de productos (crear/editar/eliminar, slug autogenerado, stock) y gestión de pedidos (selector de estado). Subida de imágenes con Vercel Blob.
 - **UI**: Next.js App Router, Tailwind CSS, fuente Geist, diseño responsive con navbar sticky y footer.
 
@@ -41,6 +42,9 @@ E-commerce full-stack con catálogo, búsqueda y filtros, carrito, checkout con 
    DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@HOST/tienda?sslmode=require"
    AUTH_SECRET="generar-con: openssl rand -hex 32"
    BLOB_READ_WRITE_TOKEN="..."   # opcional, solo para subir imágenes
+   RESEND_API_KEY="re_..."       # opcional, solo para recuperar contraseña
+   RESEND_FROM_EMAIL="onboarding@resend.dev"
+   APP_URL="https://tienda.vercel.app"
    ```
 
 3. Aplicar migraciones y sembrar datos de ejemplo:
