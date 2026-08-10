@@ -23,8 +23,8 @@ export function ForgotPasswordForm() {
     <div className="flex flex-col gap-4">
       {state?.ok && (
         <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-          Si existe una cuenta con ese correo, recibirás un código de 6 dígitos
-          para restablecer tu contraseña.
+          Revisa tu correo electrónico. Recibirás un código de 6 dígitos para
+          restablecer tu contraseña.
         </p>
       )}
       {state?.error && (
