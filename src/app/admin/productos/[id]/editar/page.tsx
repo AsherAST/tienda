@@ -38,9 +38,9 @@ export default async function EditarProductoPage({
             price: String(product.price),
             stock: String(product.stock),
             category: product.category,
-            imageUrl: product.imageUrl ?? "",
           }}
-          action={(input) => updateProduct(id, input)}
+          currentImageUrl={product.imageUrl}
+          action={(formData) => updateProduct(id, formData)}
           submitLabel="Guardar cambios"
         />
       </div>
