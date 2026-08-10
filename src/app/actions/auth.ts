@@ -12,7 +12,7 @@ import {
   createPasswordResetToken,
   consumeResetToken,
   getValidResetToken,
-  sendPasswordResetEmail,
+  getAppOrigin,
   buildResetUrl,
 } from "@/lib/password-reset";
 
@@ -79,7 +79,9 @@ export async function logout() {
   await signOut({ redirectTo: "/" });
 }
 
-export type ResetState = { error?: string; ok?: boolean } | undefined;
+export type ResetState =
+  | { error?: string; ok?: boolean; resetUrl?: string }
+  | undefined;
 
 export async function requestPasswordReset(
   _prevState: ResetState,
@@ -93,21 +95,10 @@ export async function requestPasswordReset(
   const user = await db.user.findUnique({ where: { email } });
   if (user) {
     const token = await createPasswordResetToken(user.id);
-    const origin =
-      process.env.APP_URL ??
-      (process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000");
-    const resetUrl = buildResetUrl(origin, token);
-    try {
-      await sendPasswordResetEmail(user.email, resetUrl);
-    } catch (error) {
-      console.error("RESET-EMAIL-ERROR", error);
-      return { error: "No se pudo enviar el correo. Intenta de nuevo." };
-    }
+    return { resetUrl: buildResetUrl(getAppOrigin(), token) };
   }
 
-  return { ok: true };
+  return { ok: true, resetUrl: undefined };
 }
 
 export async function resetPassword(

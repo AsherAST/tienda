@@ -21,7 +21,7 @@ const { mockDb, MockAuthError, mockSignIn, mockPasswordReset } = vi.hoisted(() =
       createPasswordResetToken: vi.fn(),
       consumeResetToken: vi.fn(),
       getValidResetToken: vi.fn(),
-      sendPasswordResetEmail: vi.fn(),
+      getAppOrigin: vi.fn(),
       buildResetUrl: vi.fn(),
     },
   };
@@ -47,8 +47,7 @@ vi.mock("@/lib/password-reset", () => ({
     mockPasswordReset.consumeResetToken(...args),
   getValidResetToken: (...args: unknown[]) =>
     mockPasswordReset.getValidResetToken(...args),
-  sendPasswordResetEmail: (...args: unknown[]) =>
-    mockPasswordReset.sendPasswordResetEmail(...args),
+  getAppOrigin: (...args: unknown[]) => mockPasswordReset.getAppOrigin(...args),
   buildResetUrl: (...args: unknown[]) => mockPasswordReset.buildResetUrl(...args),
 }));
 
@@ -123,16 +122,12 @@ describe("requestPasswordReset", () => {
   it("envía el email y crea el token si el usuario existe", async () => {
     mockDb.user.findUnique.mockResolvedValue({ id: "u1", email: "demo@tienda.cl" });
     mockPasswordReset.createPasswordResetToken.mockResolvedValue("tok123");
+    mockPasswordReset.getAppOrigin.mockReturnValue("http://localhost:3000");
     mockPasswordReset.buildResetUrl.mockReturnValue("http://localhost:3000/recuperar/tok123");
-    mockPasswordReset.sendPasswordResetEmail.mockResolvedValue(undefined);
 
     const result = await requestPasswordReset(undefined, form({ email: "demo@tienda.cl" }));
-    expect(result?.ok).toBe(true);
+    expect(result?.resetUrl).toBe("http://localhost:3000/recuperar/tok123");
     expect(mockPasswordReset.createPasswordResetToken).toHaveBeenCalledWith("u1");
-    expect(mockPasswordReset.sendPasswordResetEmail).toHaveBeenCalledWith(
-      "demo@tienda.cl",
-      "http://localhost:3000/recuperar/tok123",
-    );
   });
 
   it("no filtra usuarios inexistentes (misma respuesta ok)", async () => {
@@ -140,14 +135,6 @@ describe("requestPasswordReset", () => {
     const result = await requestPasswordReset(undefined, form({ email: "nadie@tienda.cl" }));
     expect(result?.ok).toBe(true);
     expect(mockPasswordReset.createPasswordResetToken).not.toHaveBeenCalled();
-  });
-
-  it("devuelve error si falla el envío del email", async () => {
-    mockDb.user.findUnique.mockResolvedValue({ id: "u1", email: "demo@tienda.cl" });
-    mockPasswordReset.createPasswordResetToken.mockResolvedValue("tok123");
-    mockPasswordReset.sendPasswordResetEmail.mockRejectedValue(new Error("smtp"));
-    const result = await requestPasswordReset(undefined, form({ email: "demo@tienda.cl" }));
-    expect(result?.error).toBeTruthy();
   });
 });
 

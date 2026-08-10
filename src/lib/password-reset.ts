@@ -1,6 +1,5 @@
 import "server-only";
 import { createHash, randomBytes } from "crypto";
-import { Resend } from "resend";
 import { db } from "@/lib/db";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
@@ -25,28 +24,17 @@ export async function createPasswordResetToken(userId: string) {
   return token;
 }
 
-export function buildResetUrl(baseUrl: string, token: string): string {
-  return `${baseUrl.replace(/\/$/, "")}/recuperar/${token}`;
+export function getAppOrigin(): string {
+  return (
+    process.env.APP_URL ??
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000")
+  );
 }
 
-export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-  if (!apiKey) {
-    console.warn("RESEND_API_KEY no configurado; no se envió email.");
-    return;
-  }
-
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: fromEmail,
-    to: [toEmail],
-    subject: "Recupera tu contraseña",
-    text: `Recibimos una solicitud para restablecer tu contraseña.\n\nHaz clic en el siguiente enlace para elegir una nueva (válido por 1 hora):\n\n${resetUrl}\n\nSi no fuiste tú, puedes ignorar este correo.`,
-  });
-  if (error) {
-    throw error;
-  }
+export function buildResetUrl(origin: string, token: string): string {
+  return `${origin.replace(/\/$/, "")}/recuperar/${token}`;
 }
 
 export async function getValidResetToken(token: string) {
