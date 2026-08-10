@@ -61,7 +61,7 @@ const products = [
     price: 19990,
     category: "Cámaras",
     imageUrl:
-      "https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=600&q=80",
+      "https://images.unsplash.com/photo-1762681290673-ba1ad4ea0875?w=600&q=80",
     stock: 15,
   },
   {
@@ -72,7 +72,7 @@ const products = [
     price: 8990,
     category: "Accesorios",
     imageUrl:
-      "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80",
+      "https://images.unsplash.com/photo-1545235616-db3cd822ad8c?w=600&q=80",
     stock: 30,
   },
 ];
