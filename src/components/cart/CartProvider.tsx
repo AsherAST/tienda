@@ -21,6 +21,7 @@ type CartContextValue = {
   add: (productId: string, qty?: number) => Promise<string | undefined>;
   updateQty: (productId: string, qty: number) => Promise<void>;
   remove: (productId: string) => Promise<void>;
+  clear: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -52,6 +53,10 @@ export function CartProvider({
     setSummary(result.cart);
   }, []);
 
+  const clear = useCallback(() => {
+    setSummary(emptySummary);
+  }, []);
+
   return (
     <CartContext.Provider
       value={{
@@ -61,6 +66,7 @@ export function CartProvider({
         add,
         updateQty,
         remove,
+        clear,
       }}
     >
       {children}

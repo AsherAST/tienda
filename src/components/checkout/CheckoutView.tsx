@@ -20,7 +20,7 @@ const labelClass = "block text-sm font-medium text-zinc-700";
 
 export function CheckoutView({ userName }: { userName?: string }) {
   const router = useRouter();
-  const { summary } = useCart();
+  const { summary, clear } = useCart();
   const [shipping, setShipping] = useState<Shipping>({
     name: userName ?? "",
     address: "",
@@ -43,6 +43,7 @@ export function CheckoutView({ userName }: { userName?: string }) {
       setError(result.error);
       setPending(false);
     } else if (result.orderId) {
+      clear();
       router.push(`/pedidos/${result.orderId}`);
     }
   }
